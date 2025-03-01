@@ -54,6 +54,11 @@ def main():
         print("\n📚 Commands:")
         print("  [scan] - Scan an RFID tag")
         print("  [list] - List all known tags")
+        
+        # Only show rename option if there are items in the detection area
+        if active_tags:
+            print("  [rename] - Rename a tag in the detection area")
+            
         print("  [exit] - Exit program")
         
         # Get user input
@@ -70,6 +75,8 @@ def main():
         elif command == "scan":
             tag_id = input("Enter tag ID: ").strip()
             process_tag(tag_id, tag_names, active_tags, recent_logs)
+        elif command == "rename" and active_tags:
+            rename_tag(tag_names, active_tags, recent_logs)
         else:
             # Treat input as a tag ID
             tag_id = command
@@ -97,6 +104,50 @@ def process_tag(tag_id, tag_names, active_tags, recent_logs):
     # Log the event
     log_event(event, tag_id)
     recent_logs.append(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {event}")
+
+def rename_tag(tag_names, active_tags, recent_logs):
+    if not active_tags:
+        print("No tags in detection area to rename.")
+        time.sleep(1)
+        return
+    
+    # Display available tags to rename
+    print("\n🔄 Rename Tag:")
+    detected_tags = list(active_tags)
+    
+    for i, tag_id in enumerate(detected_tags, 1):
+        print(f"  {i}. {tag_names.get(tag_id)} ({tag_id})")
+    
+    # Get tag selection
+    try:
+        selection = int(input("\nSelect tag number to rename (0 to cancel): "))
+        if selection == 0:
+            return
+        
+        if 1 <= selection <= len(detected_tags):
+            selected_tag = detected_tags[selection-1]
+            old_name = tag_names.get(selected_tag)
+            
+            # Get new name
+            new_name = input(f"Enter new name for '{old_name}': ").strip()
+            
+            # Update tag name
+            tag_names[selected_tag] = new_name
+            save_tags(tag_names)
+            
+            # Log the rename
+            event = f"Renamed: {old_name} → {new_name}"
+            log_event(event, selected_tag)
+            recent_logs.append(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {event}")
+            
+            print(f"✅ Successfully renamed '{old_name}' to '{new_name}'")
+            time.sleep(1)
+        else:
+            print("❌ Invalid selection.")
+            time.sleep(1)
+    except ValueError:
+        print("❌ Please enter a number.")
+        time.sleep(1)
 
 if __name__ == "__main__":
     try:
