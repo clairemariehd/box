@@ -21,8 +21,11 @@ def save_tags(tags):
 def log_event(event, tag_id):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     entry = f"[{timestamp}] - {event} ({tag_id})\n"
-    with open(LOG_FILE, "a") as f:
+    
+    # Open the log file with utf-8 encoding to handle special characters
+    with open(LOG_FILE, "a", encoding="utf-8") as f:
         f.write(entry)
+
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -120,9 +123,11 @@ def rename_tag(tag_names, active_tags, recent_logs):
     
     # Get tag selection
     try:
-        selection = int(input("\nSelect tag number to rename (0 to cancel): "))
-        if selection == 0:
+        selection_input = input("\nSelect tag number to rename (0 to cancel): ")
+        if selection_input == "0":
             return
+        
+        selection = int(selection_input)
         
         if 1 <= selection <= len(detected_tags):
             selected_tag = detected_tags[selection-1]
@@ -146,7 +151,9 @@ def rename_tag(tag_names, active_tags, recent_logs):
             print("❌ Invalid selection.")
             time.sleep(1)
     except ValueError:
-        print("❌ Please enter a number.")
+        print("❌ Please enter a valid number.")
+        time.sleep(1)
+    finally:
         time.sleep(1)
 
 if __name__ == "__main__":
