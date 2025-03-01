@@ -87,7 +87,7 @@ def main():
 
 def process_tag(tag_id, tag_names, active_tags, recent_logs):
     # Validate the tag ID (assuming RFID tags are alphanumeric and of a certain length, e.g., 10 characters)
-    if not tag_id.isalnum() or len(tag_id) < 8 or len(tag_id) > 40:
+    if not tag_id.isalnum() or len(tag_id) < 23 or len(tag_id) > 25:
         print("❌ Invalid RFID tag ID.")
         time.sleep(1)
         return
