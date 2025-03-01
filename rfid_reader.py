@@ -86,6 +86,12 @@ def main():
             process_tag(tag_id, tag_names, active_tags, recent_logs)
 
 def process_tag(tag_id, tag_names, active_tags, recent_logs):
+    # Validate the tag ID (assuming RFID tags are alphanumeric and of a certain length, e.g., 10 characters)
+    if not tag_id.isalnum() or len(tag_id) < 8 or len(tag_id) > 40:
+        print("❌ Invalid RFID tag ID.")
+        time.sleep(1)
+        return
+
     # Check if this is a new tag
     if tag_id not in tag_names:
         print(f"🆕 New tag detected! ({tag_id})")
@@ -161,3 +167,4 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print("\n🔴 Exiting program.")
+
