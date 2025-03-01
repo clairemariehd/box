@@ -2,7 +2,6 @@ import json
 import os
 import time
 from datetime import datetime
-from pynput import keyboard
 
 # File paths
 TAG_FILE = "tag_names.json"
@@ -19,61 +18,85 @@ def save_tags(tags):
     with open(TAG_FILE, "w") as f:
         json.dump(tags, f, indent=4)
 
-def log_event(event):
+def log_event(event, tag_id):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    entry = f"[{timestamp}] - {event}\n"
+    entry = f"[{timestamp}] - {event} ({tag_id})\n"
     with open(LOG_FILE, "a") as f:
         f.write(entry)
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
-# Track active tags
-tag_names = load_tags()
-active_tags = set()
-recent_logs = []
-current_scan = ""
+# Main function
+def main():
+    tag_names = load_tags()
+    active_tags = set()
+    recent_logs = []
+    
+    while True:
+        # Clear screen and show current status
+        clear_screen()
+        print("🔹 RFID Scanner - Live Log 🔹")
+        
+        # Show items in detection area
+        if active_tags:
+            item_list = [tag_names.get(t, t) for t in active_tags]
+            print(f"📌 Items in Detection Area: {item_list}")
+        else:
+            print("📌 Items in Detection Area: []")
+        
+        # Show recent logs
+        print("📄 Recent Logs:")
+        for log in recent_logs[-5:]:
+            print(log)
+        
+        # Show options
+        print("\n📚 Commands:")
+        print("  [scan] - Scan an RFID tag")
+        print("  [list] - List all known tags")
+        print("  [exit] - Exit program")
+        
+        # Get user input
+        command = input("\nEnter command or tag ID: ").strip().lower()
+        
+        # Process commands
+        if command == "exit":
+            break
+        elif command == "list":
+            print("\n🏷️ Known Tags:")
+            for tag_id, name in tag_names.items():
+                print(f"  {name} ({tag_id})")
+            input("\nPress Enter to continue...")
+        elif command == "scan":
+            tag_id = input("Enter tag ID: ").strip()
+            process_tag(tag_id, tag_names, active_tags, recent_logs)
+        else:
+            # Treat input as a tag ID
+            tag_id = command
+            process_tag(tag_id, tag_names, active_tags, recent_logs)
 
-def update_display():
-    clear_screen()
-    print("🔹 RFID Scanner - Live Log 🔹")
-    print(f"📌 Items in Detection Area: {[f'{tag_names.get(t, t)} ({t})' for t in active_tags]}")
-    print("📄 Recent Logs:")
-    for log in recent_logs[-5:]:
-        print(log)
-
-def on_key_press(key):
-    global current_scan
-    try:
-        if key == keyboard.Key.enter:
-            process_scan(current_scan)
-            current_scan = ""
-        elif hasattr(key, 'char') and key.char is not None:
-            current_scan += key.char
-    except AttributeError:
-        pass
-
-def process_scan(tag_id):
-    global recent_logs
+def process_tag(tag_id, tag_names, active_tags, recent_logs):
+    # Check if this is a new tag
     if tag_id not in tag_names:
-        tag_names[tag_id] = input(f"🆕 New tag detected! Enter a name for this tag ({tag_id}): ")
+        print(f"🆕 New tag detected! ({tag_id})")
+        new_name = input("Enter a name for this tag: ").strip()
+        tag_names[tag_id] = new_name
         save_tags(tag_names)
-        print(f"✅ Tag '{tag_id}' saved as '{tag_names[tag_id]}'")
+        log_msg = f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - New tag registered: {new_name}"
+        recent_logs.append(log_msg)
+        
+    # Toggle tag presence
+    tag_name = tag_names.get(tag_id)
     if tag_id in active_tags:
         active_tags.remove(tag_id)
-        event = f"Tag Removed: {tag_names[tag_id]} ({tag_id})"
+        event = f"Removed: {tag_name}"
     else:
         active_tags.add(tag_id)
-        event = f"Tag Added: {tag_names[tag_id]} ({tag_id})"
-    log_event(event)
+        event = f"Added: {tag_name}"
+    
+    # Log the event
+    log_event(event, tag_id)
     recent_logs.append(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {event}")
-    update_display()
-
-def main():
-    update_display()
-    print("🔄 Waiting for RFID scans... Press ESC to exit.")
-    with keyboard.Listener(on_press=on_key_press) as listener:
-        listener.join()
 
 if __name__ == "__main__":
     try:
